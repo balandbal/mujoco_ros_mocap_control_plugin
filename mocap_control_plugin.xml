@@ -1,0 +1,10 @@
+<library path="lib/libmujoco_ros_mocap_control_plugin">
+  <class
+    name="mujoco_ros_mocap_control_plugin/MocapControlPlugin"
+    type="mujoco_ros_mocap_control_plugin::MocapControlPlugin"
+    base_class_type="MujocoSim::MujocoPlugin">
+    <description>
+      TODO: description
+    </description>
+  </class>
+</library>
