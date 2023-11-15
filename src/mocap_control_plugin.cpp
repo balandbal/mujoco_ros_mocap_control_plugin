@@ -17,18 +17,52 @@ bool MocapControlPlugin::load(MujocoSim::mjModelPtr m, MujocoSim::mjDataPtr d)
 		return false;
 	}
 
-	// TODO: get these from the parameter server
-	auto feeler_name = "robot_flange";
-	auto mocap_name = "robot_flange_mocap";
+	std::string robot_prefix = "robot_";
+	std::string feeler_name = robot_prefix + "flange";
+	std::string mocap_name = robot_prefix + "flange_mocap";
+
+	if (rosparam_config_.getType() == XmlRpc::XmlRpcValue::TypeStruct) {
+		if (rosparam_config_.hasMember("mocap_mapping")) {
+			if (rosparam_config_["mocap_mapping"].getType() != XmlRpc::XmlRpcValue::TypeArray) {
+				ROS_ERROR_NAMED("mujoco_ros_mocap_control_plugin", "The 'mocap_mapping' param for MocapControlPlugin must define an array");
+				return false;
+			}
+
+			if (rosparam_config_["mocap_mapping"].size() != 0) {
+				
+				// TODO: vectorize functionality for multiple pairs of mocaps and bodies
+
+				if (!rosparam_config_["mocap_mapping"][0].hasMember("body_name") or !rosparam_config_["mocap_mapping"][0].hasMember("mocap_name")) {
+					ROS_ERROR_NAMED("mujoco_ros_mocap_control_plugin", "The elements of 'mocap_mapping' must have a 'body_name' and a 'mocap_name' key defined");
+					return false;
+				}
+				if (rosparam_config_["mocap_mapping"][0]["body_name"].getType() != XmlRpc::XmlRpcValue::TypeString) {
+					ROS_ERROR_NAMED("mujoco_ros_mocap_control_plugin", "The 'body_name' params for MocapControlPlugin must define a string");
+					return false;
+				}
+				if (rosparam_config_["mocap_mapping"][0]["mocap_name"].getType() != XmlRpc::XmlRpcValue::TypeString) {
+					ROS_ERROR_NAMED("mujoco_ros_mocap_control_plugin", "The 'mocap_name' params for MocapControlPlugin must define a string");
+					return false;
+				}
+
+				feeler_name = (std::string)rosparam_config_["mocap_mapping"][0]["body_name"];
+				ROS_INFO_STREAM_NAMED("mujoco_ros_mocap_control_plugin", "Using body name '" << feeler_name << "'");
+				mocap_name = (std::string)rosparam_config_["mocap_mapping"][0]["mocap_name"];
+				ROS_INFO_STREAM_NAMED("mujoco_ros_mocap_control_plugin", "Using mocap name '" << mocap_name << "'");
+				}
+			else
+				ROS_WARN_NAMED("mujoco_ros_mocap_control_plugin", "The 'mocap_mapping' param for MocapControlPlugin has a size of 0. Ignoring it");
+		}
+	}
 
 	// Get body ids from body names
-	feeler_id_ = mj_name2id(m.get(), mjOBJ_BODY, feeler_name);
+	feeler_id_ = mj_name2id(m.get(), mjOBJ_BODY, feeler_name.c_str());
 	if (feeler_id_ == -1) {
 		ROS_FATAL_STREAM_NAMED("mujoco_ros_mocap_control_plugin",
 		                       "Found no body named '" << feeler_name << "' in MJCF");
 		return false;
 	}
-	auto mocap_body_id = mj_name2id(m.get(), mjOBJ_BODY, mocap_name);
+	auto mocap_body_id = mj_name2id(m.get(), mjOBJ_BODY, mocap_name.c_str());
 	if (mocap_body_id == -1) {
 		ROS_FATAL_STREAM_NAMED("mujoco_ros_mocap_control_plugin",
 		                       "Found no body named '" << mocap_name << "' in MJCF");

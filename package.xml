@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>mujoco_ros_mocap_control_plugin</name>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
   <description>The mujoco_ros_mocap_control_plugin package</description>
 
   <maintainer email="balazs.andras.balint@ipa.fraunhofer.de">Balázs András Bálint</maintainer>
