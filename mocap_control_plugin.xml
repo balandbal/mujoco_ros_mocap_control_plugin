@@ -2,7 +2,7 @@
   <class
     name="mujoco_ros_mocap_control_plugin/MocapControlPlugin"
     type="mujoco_ros_mocap_control_plugin::MocapControlPlugin"
-    base_class_type="MujocoSim::MujocoPlugin">
+    base_class_type="mujoco_ros::MujocoPlugin">
     <description>
       TODO: description
     </description>

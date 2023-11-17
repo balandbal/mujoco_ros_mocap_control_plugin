@@ -6,7 +6,7 @@ namespace mujoco_ros_mocap_control_plugin {
 
 MocapControlPlugin::~MocapControlPlugin() {}
 
-bool MocapControlPlugin::load(MujocoSim::mjModelPtr m, MujocoSim::mjDataPtr d)
+bool MocapControlPlugin::load(const mjModel *model, mjData *data)
 {
 	ROS_INFO_STREAM_NAMED("mujoco_ros_mocap_control_plugin", "Loading mujoco_ros_mocap_control_plugin plugin ...");
 
@@ -17,6 +17,7 @@ bool MocapControlPlugin::load(MujocoSim::mjModelPtr m, MujocoSim::mjDataPtr d)
 		return false;
 	}
 
+	// TODO: handle robot prefix?
 	std::string robot_prefix = "robot_";
 	std::string feeler_name = robot_prefix + "flange";
 	std::string mocap_name = robot_prefix + "flange_mocap";
@@ -56,13 +57,13 @@ bool MocapControlPlugin::load(MujocoSim::mjModelPtr m, MujocoSim::mjDataPtr d)
 	}
 
 	// Get body ids from body names
-	feeler_id_ = mj_name2id(m.get(), mjOBJ_BODY, feeler_name.c_str());
+	feeler_id_ = mj_name2id(const_cast<mjModel *>(model), mjOBJ_BODY, feeler_name.c_str());
 	if (feeler_id_ == -1) {
 		ROS_FATAL_STREAM_NAMED("mujoco_ros_mocap_control_plugin",
 		                       "Found no body named '" << feeler_name << "' in MJCF");
 		return false;
 	}
-	auto mocap_body_id = mj_name2id(m.get(), mjOBJ_BODY, mocap_name.c_str());
+	auto mocap_body_id = mj_name2id(const_cast<mjModel *>(model), mjOBJ_BODY, mocap_name.c_str());
 	if (mocap_body_id == -1) {
 		ROS_FATAL_STREAM_NAMED("mujoco_ros_mocap_control_plugin",
 		                       "Found no body named '" << mocap_name << "' in MJCF");
@@ -70,7 +71,7 @@ bool MocapControlPlugin::load(MujocoSim::mjModelPtr m, MujocoSim::mjDataPtr d)
 	}
 
 	// Get the id of the mocap body in the mocap-relevant lists
-	mocap_id_ = m->body_mocapid[mocap_body_id];
+	mocap_id_ = model->body_mocapid[mocap_body_id];
 	if (mocap_id_ == -1) {
 		ROS_FATAL_STREAM_NAMED("mujoco_ros_mocap_control_plugin",
 		                       "The body named '" << mocap_name << "' is not a mocap body. Set the attribute 'mocap=\"true\"' your MJCF");
@@ -84,18 +85,18 @@ bool MocapControlPlugin::load(MujocoSim::mjModelPtr m, MujocoSim::mjDataPtr d)
 	mocap_quat_id_  = mocap_id_ * 4;
 
 	// if there is only one mocap body, use pointers to sync poses
-	only_one_mocap_in_mjcf_ = m->nmocap == 1;
+	only_one_mocap_in_mjcf_ = model->nmocap == 1;
 	if (only_one_mocap_in_mjcf_) {
 		ROS_INFO_NAMED("mujoco_ros_mocap_control_plugin", "There is only one mocap body in the MJCF; using pointers instead of copying");
-		d->mocap_pos  = &(d->xpos[feeler_id_ * 3]);
-		d->mocap_quat = &(d->xquat[feeler_id_ * 4]);
+		data->mocap_pos  = &(data->xpos[feeler_id_ * 3]);
+		data->mocap_quat = &(data->xquat[feeler_id_ * 4]);
 	}
 
 	ROS_INFO("Loaded mujoco_ros_mocap_control_plugin");
 	return true;
 }
 
-void MocapControlPlugin::controlCallback(MujocoSim::mjModelPtr /*model*/, MujocoSim::mjDataPtr data)
+void MocapControlPlugin::controlCallback(const mjModel */*model*/, mjData *data)
 {
 	ros::Time sim_time_ros = ros::Time::now();
 
@@ -127,4 +128,4 @@ void MocapControlPlugin::reset() {}
 
 } // mujoco_ros_mocap_control_plugin
 
-PLUGINLIB_EXPORT_CLASS(mujoco_ros_mocap_control_plugin::MocapControlPlugin, MujocoSim::MujocoPlugin)
+PLUGINLIB_EXPORT_CLASS(mujoco_ros_mocap_control_plugin::MocapControlPlugin, mujoco_ros::MujocoPlugin)
